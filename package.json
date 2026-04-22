@@ -1,0 +1,10 @@
+{
+  "name": "warren-checkout",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "catalog:build": "python scripts/export_catalog.py",
+    "start": "node server.js"
+  }
+}

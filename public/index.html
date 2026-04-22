@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warren Group Checkout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="hero-main">
+          <img
+            class="brand-logo"
+            src="/assets/the-warren-group-stacked-logo-cropped.webp"
+            alt="The Warren Group"
+          />
+          <h1>County File Checkout</h1>
+          <p class="intro">
+            Choose a purchase type, filter by state and file type, and build the order without the Jotform clutter.
+          </p>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form id="checkout-form" class="layout">
+          <section class="panel info-panel">
+            <div class="section-heading">
+              <h2>Customer</h2>
+              <p>Basic customer details for checkout and email delivery.</p>
+            </div>
+
+            <div class="field-row">
+              <label>
+                First name
+                <input name="firstName" required />
+              </label>
+              <label>
+                Last name
+                <input name="lastName" required />
+              </label>
+            </div>
+
+            <label>
+              Email
+              <input name="email" type="email" required />
+            </label>
+
+            <fieldset class="purchase-type">
+              <legend>Purchase type</legend>
+              <div class="pill-row">
+                <label class="pill-option">
+                  <input type="radio" name="purchaseType" value="one-time" checked />
+                  <span>One-Time</span>
+                </label>
+                <label class="pill-option">
+                  <input type="radio" name="purchaseType" value="annual" />
+                  <span>Annual</span>
+                </label>
+              </div>
+            </fieldset>
+          </section>
+
+          <section class="panel catalog-panel">
+            <div class="section-heading">
+              <h2>County Catalog</h2>
+              <p id="catalog-summary">Loading catalog...</p>
+            </div>
+
+            <div class="filter-grid">
+              <label>
+                Search county
+                <input id="search-input" type="search" placeholder="Ex: Cochise or Maricopa" />
+              </label>
+
+              <label>
+                State
+                <select id="state-filter">
+                  <option value="all">All states</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="filter-row">
+              <button class="filter-chip active" type="button" data-category="all">All</button>
+              <button class="filter-chip" type="button" data-category="Divorce">Divorce</button>
+              <button class="filter-chip" type="button" data-category="Probate">Probate</button>
+            </div>
+
+            <div class="selection-bar">
+              <span id="result-count">0 results</span>
+              <span id="selected-count">0 selected</span>
+            </div>
+
+            <div id="catalog" class="catalog"></div>
+
+          </section>
+        </form>
+
+        <section class="panel preview-panel">
+          <div class="section-heading">
+            <h2>Order Summary</h2>
+            <p>A clear preview of what the customer is about to purchase.</p>
+          </div>
+
+          <div id="order-preview" class="order-preview">
+            <div class="empty-summary">Loading catalog...</div>
+          </div>
+
+          <div class="actions preview-actions">
+            <button type="submit" form="checkout-form">Continue To Secure Payment</button>
+            <p id="checkout-status" class="support-status"></p>
+          </div>
+        </section>
+
+        <section class="support-grid">
+          <section class="panel support-panel">
+            <div class="section-heading">
+              <h2>Request Counties Not Currently Available</h2>
+              <p>Select one or more unavailable counties and your team can follow up on sourcing.</p>
+            </div>
+
+            <form id="missing-county-form" class="support-form">
+              <div class="field-row">
+                <label>
+                  State
+                  <select id="request-state-filter" name="state" required>
+                    <option value="all">All states</option>
+                  </select>
+                </label>
+                <label>
+                  Search county
+                  <input id="request-search-input" name="requestSearch" placeholder="Ex: Orange" />
+                </label>
+              </div>
+
+              <div class="filter-row compact-row">
+                <button class="filter-chip active" type="button" data-request-category="all">All</button>
+                <button class="filter-chip" type="button" data-request-category="Divorce">Divorce</button>
+                <button class="filter-chip" type="button" data-request-category="Probate">Probate</button>
+              </div>
+
+              <div class="selection-bar">
+                <span id="request-result-count">0 results</span>
+                <span id="request-selected-count">0 selected</span>
+              </div>
+
+              <div id="missing-county-options" class="request-options"></div>
+
+              <label>
+                Notes
+                <textarea name="notes" rows="4" placeholder="Anything helpful for the request"></textarea>
+              </label>
+
+              <button type="submit">Send County Request</button>
+              <p id="missing-county-status" class="support-status"></p>
+            </form>
+          </section>
+
+          <section class="panel support-panel">
+            <div class="section-heading">
+              <h2>Speak With a Rep</h2>
+              <p>For bulk purchases, full-state coverage, or pricing guidance.</p>
+            </div>
+
+            <form id="rep-inquiry-form" class="support-form">
+              <div class="field-row">
+                <label>
+                  Name
+                  <input name="name" placeholder="Your name" required />
+                </label>
+                <label>
+                  Company
+                  <input name="company" placeholder="Company name" />
+                </label>
+              </div>
+
+              <div class="field-row">
+                <label>
+                  Email
+                  <input name="email" type="email" placeholder="name@company.com" required />
+                </label>
+                <label>
+                  States of interest
+                  <input name="states" placeholder="Ex: CA, NV, AZ" required />
+                </label>
+              </div>
+
+              <label>
+                What do you need?
+                <select name="need" required>
+                  <option value="">Choose one</option>
+                  <option value="Bulk county purchase">Bulk county purchase</option>
+                  <option value="Entire state purchase">Entire state purchase</option>
+                  <option value="Bulk + entire state pricing">Bulk + entire state pricing</option>
+                </select>
+              </label>
+
+              <label>
+                Notes
+                <textarea name="notes" rows="4" placeholder="Tell us what volume or coverage you need"></textarea>
+              </label>
+
+              <button type="submit">Request Rep Follow-Up</button>
+              <p id="rep-inquiry-status" class="support-status"></p>
+            </form>
+          </section>
+        </section>
+
+        <section class="panel content-panel">
+          <div class="section-heading">
+            <h2>Questions & Additional Information</h2>
+            <p>Reserved space for the client content, FAQs, and explanatory notes at the bottom of the page.</p>
+          </div>
+
+          <div class="content-grid">
+            <article class="content-card">
+              <h3>Frequently Asked Questions</h3>
+              <p>Add the client’s common questions here, such as turnaround time, refresh cadence, and file delivery expectations.</p>
+            </article>
+            <article class="content-card">
+              <h3>Coverage & Purchase Notes</h3>
+              <p>Use this area for notes about county availability, annual access details, and anything important before checkout.</p>
+            </article>
+            <article class="content-card">
+              <h3>Bulk and Statewide Requests</h3>
+              <p>Keep a clear explanation here for customers who need high-volume, statewide, or custom coverage beyond the standard catalog.</p>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
