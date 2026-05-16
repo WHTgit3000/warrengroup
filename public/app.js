@@ -114,6 +114,79 @@ function renderRequestCounts() {
   selectedCount.textContent = `${state.selectedRequestIds.size} selected`;
 }
 
+function renderEmptyRequestSummary(message) {
+  const summary = document.getElementById("missing-county-summary");
+  summary.innerHTML = `<div class="empty-summary">${escapeHtml(message)}</div>`;
+}
+
+function removeSelectedProduct(productId) {
+  state.selectedIds.delete(productId);
+
+  const checkbox = document.querySelector(`input[name="productId"][value="${productId}"]`);
+  if (checkbox) {
+    checkbox.checked = false;
+    const card = checkbox.closest(".product-card");
+    if (card) {
+      card.classList.remove("selected");
+    }
+  }
+
+  renderCounts();
+  refreshSummary();
+}
+
+function removeRequestedCounty(requestId) {
+  state.selectedRequestIds.delete(requestId);
+
+  const checkbox = document.querySelector(`input[name="requestedCountyId"][value="${requestId}"]`);
+  if (checkbox) {
+    checkbox.checked = false;
+    const card = checkbox.closest(".request-card");
+    if (card) {
+      card.classList.remove("selected");
+    }
+  }
+
+  renderRequestCounts();
+  refreshRequestSummary();
+}
+
+function removeSelectedGroup(group) {
+  group.items.forEach(item => {
+    state.selectedIds.delete(item.id);
+
+    const checkbox = document.querySelector(`input[name="productId"][value="${item.id}"]`);
+    if (checkbox) {
+      checkbox.checked = false;
+      const card = checkbox.closest(".product-card");
+      if (card) {
+        card.classList.remove("selected");
+      }
+    }
+  });
+
+  renderCounts();
+  refreshSummary();
+}
+
+function removeRequestedGroup(group) {
+  group.items.forEach(item => {
+    state.selectedRequestIds.delete(item.id);
+
+    const checkbox = document.querySelector(`input[name="requestedCountyId"][value="${item.id}"]`);
+    if (checkbox) {
+      checkbox.checked = false;
+      const card = checkbox.closest(".request-card");
+      if (card) {
+        card.classList.remove("selected");
+      }
+    }
+  });
+
+  renderRequestCounts();
+  refreshRequestSummary();
+}
+
 function renderEmptySummary(message) {
   const preview = document.getElementById("order-preview");
   preview.innerHTML = `<div class="empty-summary">${escapeHtml(message)}</div>`;
@@ -179,11 +252,14 @@ async function refreshSummary() {
       group => `
         <details class="summary-group">
           <summary class="summary-group-header">
-            <div>
+            <div class="summary-group-meta">
               <h3>${escapeHtml(group.state)} - ${escapeHtml(group.category)}</h3>
               <p>${group.items.length} file${group.items.length === 1 ? "" : "s"}</p>
             </div>
-            <strong>${formatMoney(group.total)}</strong>
+            <div class="summary-group-actions">
+              <strong>${formatMoney(group.total)}</strong>
+              <button type="button" class="summary-group-remove" data-remove-group="${escapeHtml(group.state)}|||${escapeHtml(group.category)}">Remove group</button>
+            </div>
           </summary>
           <div class="summary-group-items">
             ${group.items
@@ -194,7 +270,10 @@ async function refreshSummary() {
                       <h4>${escapeHtml(item.county)} County</h4>
                       <p>${escapeHtml(item.category)} file</p>
                     </div>
-                    <strong>${formatMoney(item.unitPrice)}</strong>
+                    <div class="summary-item-actions">
+                      <strong>${formatMoney(item.unitPrice)}</strong>
+                      <button type="button" class="summary-remove" data-remove-product-id="${escapeHtml(item.id)}">Remove</button>
+                    </div>
                   </article>
                 `
               )
@@ -232,6 +311,106 @@ async function refreshSummary() {
       ${groupCards}
     </section>
   `;
+
+  preview.querySelectorAll("[data-remove-product-id]").forEach(button => {
+    button.addEventListener("click", () => {
+      removeSelectedProduct(button.dataset.removeProductId);
+    });
+  });
+
+  preview.querySelectorAll("[data-remove-group]").forEach(button => {
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const key = button.dataset.removeGroup;
+      const group = groupedItems.find(item => `${item.state}|||${item.category}` === key);
+      if (group) {
+        removeSelectedGroup(group);
+      }
+    });
+  });
+}
+
+function refreshRequestSummary() {
+  const summary = document.getElementById("missing-county-summary");
+  const selectedItems = state.requestOptions.filter(item => state.selectedRequestIds.has(item.id));
+
+  if (!selectedItems.length) {
+    renderEmptyRequestSummary("Select one or more unavailable counties to review the request.");
+    return;
+  }
+
+  const groupedItems = buildGroupedItems(
+    selectedItems.map(item => ({
+      ...item,
+      unitPrice: 0,
+    }))
+  );
+
+  const groupCards = groupedItems
+    .map(
+      group => `
+        <details class="summary-group" open>
+          <summary class="summary-group-header">
+            <div class="summary-group-meta">
+              <h3>${escapeHtml(group.state)} - ${escapeHtml(group.category)}</h3>
+              <p>${group.items.length} request${group.items.length === 1 ? "" : "s"}</p>
+            </div>
+            <div class="summary-group-actions">
+              <strong>${group.items.length}</strong>
+              <button type="button" class="summary-group-remove" data-remove-request-group="${escapeHtml(group.state)}|||${escapeHtml(group.category)}">Remove group</button>
+            </div>
+          </summary>
+          <div class="summary-group-items">
+            ${group.items
+              .map(
+                item => `
+                  <article class="summary-item">
+                    <div>
+                      <h4>${escapeHtml(item.county)} County</h4>
+                      <p>${escapeHtml(item.category)} request</p>
+                    </div>
+                    <div class="summary-item-actions">
+                      <strong>${escapeHtml(item.state)}</strong>
+                      <button type="button" class="summary-remove" data-remove-request-id="${escapeHtml(item.id)}">Remove</button>
+                    </div>
+                  </article>
+                `
+              )
+              .join("")}
+          </div>
+        </details>
+      `
+    )
+    .join("");
+
+  summary.innerHTML = `
+    <section class="summary-list">
+      <div class="summary-list-header">
+        <h3>Selected Unavailable Counties</h3>
+        <span>${selectedItems.length} selected</span>
+      </div>
+      ${groupCards}
+    </section>
+  `;
+
+  summary.querySelectorAll("[data-remove-request-id]").forEach(button => {
+    button.addEventListener("click", () => {
+      removeRequestedCounty(button.dataset.removeRequestId);
+    });
+  });
+
+  summary.querySelectorAll("[data-remove-request-group]").forEach(button => {
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const key = button.dataset.removeRequestGroup;
+      const group = groupedItems.find(item => `${item.state}|||${item.category}` === key);
+      if (group) {
+        removeRequestedGroup(group);
+      }
+    });
+  });
 }
 
 function createProductCard(item) {
@@ -333,6 +512,7 @@ function renderRequestOptions(items) {
 
       row.classList.toggle("selected", event.target.checked);
       renderRequestCounts();
+      refreshRequestSummary();
     });
 
     container.appendChild(row);
@@ -393,6 +573,7 @@ async function submitSupportForm(formId, statusId, payloadBuilder) {
     if (formId === "missing-county-form") {
       state.selectedRequestIds = new Set();
       applyRequestFilters();
+      refreshRequestSummary();
     }
   });
 }
@@ -489,8 +670,10 @@ async function init() {
       notes: formData.get("notes"),
     }));
     renderEmptySummary("Select one or more counties to preview the order.");
+    renderEmptyRequestSummary("Select one or more unavailable counties to review the request.");
   } catch (error) {
     renderEmptySummary(error.message);
+    renderEmptyRequestSummary(error.message);
   }
 }
 
