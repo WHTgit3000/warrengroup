@@ -3,16 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Warren Group Checkout</title>
+    <title>Probate &amp; Divorce Data</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700;900&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <div class="top-utility-bar">
+      <div class="utility-inner">
+        <a class="utility-home-link" href="https://www.thewarrengroup.com/" target="_blank" rel="noreferrer">Home</a>
+      </div>
+    </div>
+
     <main class="page">
       <section class="hero">
         <div class="hero-main">
@@ -21,19 +27,37 @@
             src="/assets/the-warren-group-stacked-logo-cropped.webp"
             alt="The Warren Group"
           />
-          <h1>County File Checkout</h1>
-          <p class="intro">
-            Choose a purchase type, filter by state and file type, and build the order without the Jotform clutter.
-          </p>
+          <div class="hero-banner">
+            <h1>Probate &amp; Divorce Data</h1>
+          </div>
         </div>
       </section>
 
       <section class="workspace">
+        <section class="panel step-overview">
+          <article class="step-overview-card">
+            <span class="step-pill">Step 1</span>
+            <h2>Enter Customer Details</h2>
+            <p>Capture customer and company information for the annual subscription order.</p>
+          </article>
+          <article class="step-overview-card">
+            <span class="step-pill">Step 2</span>
+            <h2>Select Counties</h2>
+            <p>Filter by state and file type, then add the counties needed for weekly delivery.</p>
+          </article>
+          <article class="step-overview-card">
+            <span class="step-pill">Step 3</span>
+            <h2>Review &amp; Checkout</h2>
+            <p>Review the grouped order, remove any mistakes, and continue to secure payment.</p>
+          </article>
+        </section>
+
         <form id="checkout-form" class="layout">
           <section class="panel info-panel">
             <div class="section-heading">
-              <h2>Customer</h2>
-              <p>Basic customer details for checkout and email delivery.</p>
+              <span class="step-pill">Step 1</span>
+              <h2>Customer Details</h2>
+              <p>Enter customer and company information for checkout and delivery.</p>
             </div>
 
             <div class="field-row">
@@ -47,29 +71,41 @@
               </label>
             </div>
 
-            <label>
-              Email
-              <input name="email" type="email" required />
-            </label>
+            <div class="field-row">
+              <label>
+                Company name
+                <input name="companyName" />
+              </label>
+              <label>
+                Title
+                <input name="jobTitle" />
+              </label>
+            </div>
 
-            <fieldset class="purchase-type">
-              <legend>Purchase type</legend>
-              <div class="pill-row">
-                <label class="pill-option">
-                  <input type="radio" name="purchaseType" value="one-time" checked />
-                  <span>One-Time</span>
-                </label>
-                <label class="pill-option">
-                  <input type="radio" name="purchaseType" value="annual" />
-                  <span>Annual</span>
-                </label>
-              </div>
-            </fieldset>
+            <div class="field-row">
+              <label>
+                Email
+                <input name="email" type="email" required />
+              </label>
+              <label>
+                Telephone
+                <input name="telephone" type="tel" />
+              </label>
+            </div>
+
+            <input type="hidden" name="purchaseType" value="annual" />
+
+            <div class="purchase-type-summary">
+              <span class="summary-label">Purchase Type</span>
+              <strong>Annual Subscription</strong>
+              <p>Weekly data delivery under the annual subscription plan.</p>
+            </div>
           </section>
 
           <section class="panel catalog-panel">
             <div class="section-heading">
-              <h2>County Catalog</h2>
+              <span class="step-pill">Step 2</span>
+              <h2>Select Counties</h2>
               <p id="catalog-summary">Loading catalog...</p>
             </div>
 
@@ -99,14 +135,14 @@
             </div>
 
             <div id="catalog" class="catalog"></div>
-
           </section>
         </form>
 
         <section class="panel preview-panel">
           <div class="section-heading">
-            <h2>Order Summary</h2>
-            <p>A clear preview of what the customer is about to purchase.</p>
+            <span class="step-pill">Step 3</span>
+            <h2>Review &amp; Checkout</h2>
+            <p>Review the annual subscription order before continuing to secure payment.</p>
           </div>
 
           <div id="order-preview" class="order-preview">
@@ -120,11 +156,13 @@
         </section>
 
         <section class="support-grid">
-          <section class="panel support-panel">
-            <div class="section-heading">
-              <h2>Request Counties Not Currently Available</h2>
-              <p>Select one or more unavailable counties and your team can follow up on sourcing.</p>
-            </div>
+          <details class="panel support-panel accordion-panel">
+            <summary class="accordion-summary">
+              <div>
+                <h2>Request Counties Not Currently Available</h2>
+                <p>Select one or more unavailable counties and your team can follow up on sourcing.</p>
+              </div>
+            </summary>
 
             <form id="missing-county-form" class="support-form">
               <div class="field-row">
@@ -153,6 +191,10 @@
 
               <div id="missing-county-options" class="request-options"></div>
 
+              <div id="missing-county-summary" class="request-summary">
+                <div class="empty-summary">Select one or more unavailable counties to review the request.</div>
+              </div>
+
               <label>
                 Notes
                 <textarea name="notes" rows="4" placeholder="Anything helpful for the request"></textarea>
@@ -161,13 +203,15 @@
               <button type="submit">Send County Request</button>
               <p id="missing-county-status" class="support-status"></p>
             </form>
-          </section>
+          </details>
 
-          <section class="panel support-panel">
-            <div class="section-heading">
-              <h2>Speak With a Rep</h2>
-              <p>For bulk purchases, full-state coverage, or pricing guidance.</p>
-            </div>
+          <details class="panel support-panel accordion-panel">
+            <summary class="accordion-summary">
+              <div>
+                <h2>Speak With a Rep</h2>
+                <p>For bulk purchases, full-state coverage, or pricing guidance.</p>
+              </div>
+            </summary>
 
             <form id="rep-inquiry-form" class="support-form">
               <div class="field-row">
@@ -187,7 +231,7 @@
                   <input name="email" type="email" placeholder="name@company.com" required />
                 </label>
                 <label>
-                  States of interest
+                  States or Counties interested in
                   <input name="states" placeholder="Ex: CA, NV, AZ" required />
                 </label>
               </div>
@@ -210,32 +254,74 @@
               <button type="submit">Request Rep Follow-Up</button>
               <p id="rep-inquiry-status" class="support-status"></p>
             </form>
-          </section>
+          </details>
         </section>
 
-        <section class="panel content-panel">
-          <div class="section-heading">
-            <h2>Questions & Additional Information</h2>
-            <p>Reserved space for the client content, FAQs, and explanatory notes at the bottom of the page.</p>
-          </div>
+        <details class="panel content-panel accordion-panel">
+          <summary class="accordion-summary">
+            <div>
+              <h2>Questions &amp; Additional Information</h2>
+              <p>Frequently asked questions, coverage notes, and direct contact information.</p>
+            </div>
+          </summary>
 
           <div class="content-grid">
             <article class="content-card">
               <h3>Frequently Asked Questions</h3>
-              <p>Add the client’s common questions here, such as turnaround time, refresh cadence, and file delivery expectations.</p>
+              <p><strong>What probate and divorce files can I order online?</strong><br />You can browse available probate and divorce files by county, filter by state, and add eligible selections directly to your request.</p>
+              <p><strong>How do I find files for a specific county?</strong><br />Use the state, county, and file type filters to narrow the catalog and find the records you need.</p>
+              <p><strong>What if the county I need is not available?</strong><br />If a county is not listed in the catalog, submit it through the unavailable county request section and our team can follow up on sourcing options.</p>
+              <p><strong>Is this for annual access only?</strong><br />Yes. The current cart is intended for annual probate and divorce file access.</p>
+              <p><strong>Can I request statewide or bulk coverage?</strong><br />Yes. For statewide coverage, bulk county requests, or custom pricing, use the rep request form and our team will follow up.</p>
+              <p><strong>Who should use the cart versus request a rep?</strong><br />The cart is best for standard available county selections. The rep request form is better for broader coverage needs or more customized requests.</p>
             </article>
             <article class="content-card">
-              <h3>Coverage & Purchase Notes</h3>
-              <p>Use this area for notes about county availability, annual access details, and anything important before checkout.</p>
+              <h3>Coverage &amp; Purchase Notes</h3>
+              <ul class="content-list">
+                <li>County availability varies. Coverage differs by county and state. If you need a market we do not currently collect, we’re happy to review it and research possible sourcing options.</li>
+                <li>Volume discounts are available. Larger quantities of records may qualify for discounted pricing depending on total volume.</li>
+                <li>Delivery is typically weekly. While many probate data providers deliver monthly, The Warren Group delivers records on a weekly basis, as long as new records have been added since the previous delivery.</li>
+                <li>Real estate-related filings only. We collect probate and divorce filings associated with real estate, not all filings.</li>
+                <li>Historical data may be available. This program is primarily structured as a go-forward annual subscription, but historical one-time lists may also be available upon request.</li>
+              </ul>
             </article>
             <article class="content-card">
               <h3>Bulk and Statewide Requests</h3>
-              <p>Keep a clear explanation here for customers who need high-volume, statewide, or custom coverage beyond the standard catalog.</p>
+              <p>Need data for more than just a couple counties? Visit our probate data licensing page or email <a href="mailto:datasolutions@thewarrengroup.com">datasolutions@thewarrengroup.com</a>.</p>
             </article>
           </div>
-        </section>
+        </details>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <div class="site-footer-main">
+        <div class="site-footer-grid">
+          <section class="footer-column">
+            <h3>Mailing Address</h3>
+            <p>300 Andover St #382<br />Peabody, MA 01960</p>
+          </section>
+          <section class="footer-column">
+            <h3>Our Data</h3>
+            <ul>
+              <li>Probate Data</li>
+              <li>Divorce Data</li>
+            </ul>
+          </section>
+          <section class="footer-column">
+            <h3>Contact Information</h3>
+            <ul>
+              <li><a href="mailto:customerservice@thewarrengroup.com">customerservice@thewarrengroup.com</a></li>
+              <li>617-896-5367</li>
+              <li><a href="mailto:datasolutions@thewarrengroup.com">datasolutions@thewarrengroup.com</a></li>
+            </ul>
+          </section>
+        </div>
+      </div>
+      <div class="site-footer-bottom">
+        <div class="site-footer-bottom-inner">Powered by <a href="https://www.whitehattechnology.com/" target="_blank" rel="noreferrer">White Hat Technology</a></div>
+      </div>
+    </footer>
 
     <script src="/app.js"></script>
   </body>
