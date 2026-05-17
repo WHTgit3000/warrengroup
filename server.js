@@ -37,6 +37,7 @@ const port = Number(process.env.PORT || 3000);
 const appBaseUrl = process.env.APP_BASE_URL || `http://localhost:${port}`;
 const annualWebhookUrl = "https://hooks.zapier.com/hooks/catch/26355247/ujga51r/";
 const oneTimeWebhookUrl = "https://hooks.zapier.com/hooks/catch/26355247/ujqmrkz/";
+const supportWebhookUrl = "https://hooks.zapier.com/hooks/catch/26355247/4ob9xta/";
 const squareEnvironment = process.env.SQUARE_ENVIRONMENT || "sandbox";
 const squareAccessToken = process.env.SQUARE_ACCESS_TOKEN || "";
 const squareApplicationId = process.env.SQUARE_APPLICATION_ID || "";
@@ -307,6 +308,55 @@ function sendHtml(res, statusCode, html) {
   res.end(html);
 }
 
+async function submitSupportRequest(payload) {
+  const webhookResponse = await postJson(supportWebhookUrl, payload);
+  return {
+    webhookUrl: supportWebhookUrl,
+    webhookResponse,
+  };
+}
+
+function buildSupportWebhookPayload(input, submittedAt) {
+  const type = String(input.type || "").trim();
+
+  if (type === "missing-county") {
+    const customer = input.customer || {};
+    const selectedIds = Array.isArray(input.requestedCountyIds) ? input.requestedCountyIds : [];
+    const requestOptions = getRequestOptions();
+    const selectedLabels = selectedIds
+      .map(id => requestOptions.find(item => item.id === id))
+      .filter(Boolean)
+      .map(item => `${item.category} - ${item.county} County, ${item.state}`);
+
+    return {
+      record_type: "missing_county_request",
+      submitted_at: submittedAt,
+      customer_first_name: String(customer.firstName || "").trim(),
+      customer_last_name: String(customer.lastName || "").trim(),
+      customer_company_name: String(customer.companyName || "").trim(),
+      customer_title: String(customer.title || "").trim(),
+      customer_email: String(customer.email || "").trim(),
+      customer_telephone: String(customer.telephone || "").trim(),
+      request_state: String(input.state || "").trim(),
+      requested_county_count: String(selectedIds.length),
+      requested_county_ids: selectedIds.join(", "),
+      requested_counties: selectedLabels.join("\n"),
+      notes: String(input.notes || "").trim(),
+    };
+  }
+
+  return {
+    record_type: "rep_inquiry",
+    submitted_at: submittedAt,
+    name: String(input.name || "").trim(),
+    company: String(input.company || "").trim(),
+    email: String(input.email || "").trim(),
+    title: String(input.title || "").trim(),
+    need: String(input.need || "").trim(),
+    notes: String(input.notes || "").trim(),
+  };
+}
+
 async function handleApi(req, res) {
   if (req.method === "GET" && req.url === "/api/catalog") {
     sendJson(res, 200, {
@@ -369,15 +419,19 @@ async function handleApi(req, res) {
       if (!type) {
         throw new Error("Request type is required.");
       }
+      const submittedAt = new Date().toISOString();
+      const webhookPayload = buildSupportWebhookPayload(input, submittedAt);
+      const webhookResult = await submitSupportRequest(webhookPayload);
 
       sendJson(res, 200, {
         success: true,
-        submittedAt: new Date().toISOString(),
+        submittedAt,
         type,
         message:
           type === "missing-county"
             ? "Missing county request received."
             : "Rep inquiry received.",
+        zapierStatusCode: webhookResult.webhookResponse.statusCode,
       });
     } catch (error) {
       sendJson(res, 400, { error: error.message || "Invalid request" });
