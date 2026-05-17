@@ -558,22 +558,110 @@ function readFormPayload() {
   };
 }
 
+function clearCustomerFieldErrors() {
+  document.querySelectorAll(".field-error").forEach(element => {
+    element.classList.remove("field-error");
+  });
+}
+
+function setCustomerDetailsAlert(message = "") {
+  const alert = document.getElementById("customer-details-alert");
+  if (!alert) {
+    return;
+  }
+
+  if (message) {
+    alert.textContent = message;
+    alert.hidden = false;
+  } else {
+    alert.textContent = "";
+    alert.hidden = true;
+  }
+}
+
+function validateCustomerInfoForSupport() {
+  const requiredFields = [
+    'input[name="firstName"]',
+    'input[name="lastName"]',
+    'input[name="email"]',
+    'input[name="telephone"]',
+  ];
+
+  clearCustomerFieldErrors();
+  setCustomerDetailsAlert("");
+
+  const missingFields = requiredFields
+    .map(selector => document.querySelector(selector))
+    .filter(field => field && !field.value.trim());
+
+  if (!missingFields.length) {
+    return true;
+  }
+
+  missingFields.forEach(field => {
+    field.classList.add("field-error");
+  });
+
+  setCustomerDetailsAlert("Please complete the customer details in Step 1 before submitting an unavailable county request.");
+
+  const infoPanel = document.querySelector(".info-panel");
+  const firstMissing = missingFields[0];
+  if (infoPanel) {
+    infoPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    firstMissing.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  firstMissing.focus();
+
+  return false;
+}
+
 async function submitSupportForm(formId, statusId, payloadBuilder) {
   const form = document.getElementById(formId);
   const status = document.getElementById(statusId);
 
-  form.addEventListener("submit", event => {
+  form.addEventListener("submit", async event => {
     event.preventDefault();
-    status.textContent = "Saved for follow-up in this preview.";
-    status.dataset.state = "success";
+
+    if (formId === "missing-county-form" && !validateCustomerInfoForSupport()) {
+      status.textContent = "Please complete the customer details in Step 1 before submitting an unavailable county request.";
+      status.dataset.state = "error";
+      return;
+    }
+    status.textContent = "Submitting request...";
+    status.dataset.state = "";
 
     const payload = payloadBuilder(new FormData(form));
-    console.log("Support request preview", payload);
-    form.reset();
-    if (formId === "missing-county-form") {
-      state.selectedRequestIds = new Set();
-      applyRequestFilters();
-      refreshRequestSummary();
+
+    try {
+      const response = await fetch("/api/support-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json();
+
+      if (!response.ok) {
+        status.textContent = body.error || "Unable to submit request.";
+        status.dataset.state = "error";
+        return;
+      }
+
+      status.textContent =
+        formId === "missing-county-form"
+          ? "Your request has been received. A Warren Group team member will follow up as soon as possible."
+          : "Your request has been received. A Warren Group team member will follow up as soon as possible.";
+      status.dataset.state = "success";
+
+      form.reset();
+      if (formId === "missing-county-form") {
+        state.selectedRequestIds = new Set();
+        applyRequestFilters();
+        refreshRequestSummary();
+      }
+    } catch (error) {
+      status.textContent = "Unable to submit request.";
+      status.dataset.state = "error";
     }
   });
 }
@@ -609,8 +697,21 @@ function attachFilterEvents() {
   document.querySelectorAll('input[name="purchaseType"]').forEach(input => {
     input.addEventListener("change", refreshSummary);
   });
-  document.querySelectorAll('input[name="firstName"], input[name="lastName"], input[name="email"]').forEach(input => {
+  document.querySelectorAll('input[name="firstName"], input[name="lastName"], input[name="companyName"], input[name="jobTitle"], input[name="email"], input[name="telephone"]').forEach(input => {
     input.addEventListener("input", refreshSummary);
+    input.addEventListener("input", () => {
+      if (input.value.trim()) {
+        input.classList.remove("field-error");
+      }
+      if (
+        document.querySelector('input[name="firstName"]')?.value.trim() &&
+        document.querySelector('input[name="lastName"]')?.value.trim() &&
+        document.querySelector('input[name="email"]')?.value.trim() &&
+        document.querySelector('input[name="telephone"]')?.value.trim()
+      ) {
+        setCustomerDetailsAlert("");
+      }
+    });
   });
 
   document.querySelectorAll(".filter-chip").forEach(button => {
@@ -656,6 +757,14 @@ async function init() {
     form.addEventListener("submit", previewOrder);
     submitSupportForm("missing-county-form", "missing-county-status", formData => ({
       type: "missing-county",
+      customer: {
+        firstName: document.querySelector('input[name="firstName"]')?.value.trim() || "",
+        lastName: document.querySelector('input[name="lastName"]')?.value.trim() || "",
+        companyName: document.querySelector('input[name="companyName"]')?.value.trim() || "",
+        title: document.querySelector('input[name="jobTitle"]')?.value.trim() || "",
+        email: document.querySelector('input[name="email"]')?.value.trim() || "",
+        telephone: document.querySelector('input[name="telephone"]')?.value.trim() || "",
+      },
       state: formData.get("state"),
       requestedCountyIds: [...state.selectedRequestIds],
       notes: formData.get("notes"),
@@ -665,7 +774,7 @@ async function init() {
       name: formData.get("name"),
       company: formData.get("company"),
       email: formData.get("email"),
-      states: formData.get("states"),
+      title: formData.get("states"),
       need: formData.get("need"),
       notes: formData.get("notes"),
     }));
