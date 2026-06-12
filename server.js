@@ -47,6 +47,22 @@ const squareApiHost =
 const squareVersion = "2026-01-22";
 const pendingOrders = new Map();
 
+function getRequestBaseUrl(req) {
+  if (process.env.APP_BASE_URL) {
+    return process.env.APP_BASE_URL.replace(/\/+$/, "");
+  }
+
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const proto = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto;
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+
+  if (host) {
+    return `${proto || "http"}://${host}`;
+  }
+
+  return appBaseUrl.replace(/\/+$/, "");
+}
+
 function sendJson(res, statusCode, body) {
   const json = JSON.stringify(body, null, 2);
   res.writeHead(statusCode, {
@@ -176,9 +192,9 @@ function getSquareHeaders(body = "") {
   };
 }
 
-async function createSquarePaymentLink(order) {
+async function createSquarePaymentLink(order, baseUrl) {
   if (!squareAccessToken || !squareLocationId || !squareApplicationId) {
-    throw new Error("Square sandbox credentials are not configured.");
+    throw new Error("Square credentials are not configured.");
   }
 
   const body = JSON.stringify({
@@ -196,8 +212,8 @@ async function createSquarePaymentLink(order) {
       })),
     },
     checkout_options: {
-      redirect_url: `${appBaseUrl}/payment/success?submissionId=${encodeURIComponent(order.submissionId)}`,
-      merchant_support_email: "customerservice@thewarrengroup.com",
+      redirect_url: `${baseUrl}/payment/success?submissionId=${encodeURIComponent(order.submissionId)}`,
+      merchant_support_email: "orders@thewarrengroup.com",
       ask_for_shipping_address: false,
       enable_coupon: false,
     },
@@ -462,7 +478,7 @@ async function handleApi(req, res) {
     try {
       const input = await readRequestBody(req);
       const order = buildCheckoutOrder(input);
-      const squareLinkResponse = await createSquarePaymentLink(order);
+      const squareLinkResponse = await createSquarePaymentLink(order, getRequestBaseUrl(req));
       const paymentLink = squareLinkResponse.payment_link;
 
       pendingOrders.set(order.submissionId, {
