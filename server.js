@@ -347,6 +347,186 @@ function sendHtml(res, statusCode, html) {
   res.end(html);
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildPaymentSuccessPage({ submissionId, squareOrderState }) {
+  const safeSubmissionId = escapeHtml(submissionId);
+  const safeOrderState = escapeHtml(squareOrderState || "Received");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment Successful | The Warren Group</title>
+  <style>
+    :root {
+      --accent: #800000;
+      --accent-dark: #5f0000;
+      --teal: #16a29a;
+      --ink: #111111;
+      --soft: #5c656b;
+      --line: #d3d3d3;
+      --panel: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(22, 162, 154, 0.08) 0%, rgba(22, 162, 154, 0) 42%),
+        linear-gradient(180deg, #fbfbfb 0%, #eef1f2 100%);
+    }
+
+    .top-bar {
+      height: 10px;
+      background: var(--accent);
+    }
+
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 34px 18px 56px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 42px rgba(56, 62, 66, 0.12);
+      padding: 36px;
+      text-align: center;
+      position: relative;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background: linear-gradient(90deg, var(--accent) 0 72%, var(--teal) 72% 100%);
+    }
+
+    .logo {
+      display: block;
+      width: min(260px, 80%);
+      height: auto;
+      margin: 0 auto 22px;
+    }
+
+    .eyebrow {
+      margin: 0 auto 18px;
+      width: 96px;
+      height: 4px;
+      background: var(--accent);
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(34px, 6vw, 58px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .lead {
+      max-width: 680px;
+      margin: 0 auto 24px;
+      color: var(--soft);
+      font-size: 20px;
+      line-height: 1.6;
+    }
+
+    .details {
+      display: inline-block;
+      margin: 0 0 28px;
+      padding: 14px 18px;
+      border-left: 5px solid var(--teal);
+      background: #eef7f6;
+      color: var(--soft);
+      text-align: left;
+      line-height: 1.7;
+    }
+
+    .details strong {
+      color: var(--ink);
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 210px;
+      padding: 14px 18px;
+      border: 2px solid var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .button.secondary {
+      background: #ffffff;
+      color: var(--accent);
+    }
+
+    .button:hover {
+      background: var(--accent-dark);
+      border-color: var(--accent-dark);
+      color: #ffffff;
+    }
+
+    .footer-note {
+      margin: 26px 0 0;
+      color: var(--soft);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar"></div>
+  <main class="wrap">
+    <section class="card">
+      <img class="logo" src="/assets/the-warren-group-stacked-logo-cropped.webp" alt="The Warren Group">
+      <div class="eyebrow"></div>
+      <h1>Payment Successful</h1>
+      <p class="lead">Your order has been received and sent for fulfillment. The Warren Group team will process your file delivery from here.</p>
+      <div class="details">
+        <div><strong>Submission ID:</strong> ${safeSubmissionId}</div>
+        <div><strong>Square order state:</strong> ${safeOrderState}</div>
+      </div>
+      <div class="actions">
+        <a class="button" href="https://www.thewarrengroup.com/">Return to The Warren Group</a>
+        <a class="button secondary" href="/">Place Another Order</a>
+      </div>
+      <p class="footer-note">You may safely close this window after saving the submission ID for your records.</p>
+    </section>
+  </main>
+</body>
+</html>`;
+}
+
 async function submitSupportRequest(payload) {
   const webhookResponse = await postJson(supportWebhookUrl, payload);
   return {
@@ -588,7 +768,10 @@ const server = http.createServer(async (req, res) => {
       sendHtml(
         res,
         200,
-        `<html><body style="font-family:Arial,sans-serif;padding:40px;"><h1>Payment successful</h1><p>Your order has been paid and sent for fulfillment.</p><p>Submission ID: ${submissionId}</p><p>${squareOrder ? `Square order state: ${squareOrder.state}` : "Sandbox payment confirmed through checkout return."}</p><p>You can close this window.</p></body></html>`
+        buildPaymentSuccessPage({
+          submissionId,
+          squareOrderState: squareOrder ? squareOrder.state : "Confirmed",
+        })
       );
     } catch (error) {
       sendHtml(
