@@ -546,6 +546,7 @@ const server = http.createServer(async (req, res) => {
   if (requestUrl.pathname === "/payment/success") {
     const submissionId = requestUrl.searchParams.get("submissionId") || "";
     const transactionId = requestUrl.searchParams.get("transactionId") || "";
+    const returnedOrderId = requestUrl.searchParams.get("orderId") || "";
     const pending = pendingOrders.get(submissionId);
 
     if (!pending) {
@@ -560,12 +561,20 @@ const server = http.createServer(async (req, res) => {
     try {
       let squareOrder = null;
       let completedPayment = null;
+      const squareOrderId = returnedOrderId || pending.squareOrderId;
 
       try {
-        squareOrder = await retrieveSquareOrder(pending.squareOrderId);
-        completedPayment = transactionId
-          ? await retrieveSquarePayment(transactionId)
-          : await searchCompletedSquarePayment(pending.squareOrderId);
+        squareOrder = await retrieveSquareOrder(squareOrderId);
+
+        if (transactionId) {
+          try {
+            completedPayment = await retrieveSquarePayment(transactionId);
+          } catch (error) {
+            completedPayment = await searchCompletedSquarePayment(squareOrderId);
+          }
+        } else {
+          completedPayment = await searchCompletedSquarePayment(squareOrderId);
+        }
       } catch (error) {
         if (squareEnvironment !== "sandbox") {
           throw error;
