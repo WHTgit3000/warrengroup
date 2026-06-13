@@ -560,32 +560,21 @@ const server = http.createServer(async (req, res) => {
 
     try {
       let squareOrder = null;
-      let completedPayment = null;
       const squareOrderId = returnedOrderId || pending.squareOrderId;
 
       try {
         squareOrder = await retrieveSquareOrder(squareOrderId);
-
-        if (transactionId) {
-          try {
-            completedPayment = await retrieveSquarePayment(transactionId);
-          } catch (error) {
-            completedPayment = await searchCompletedSquarePayment(squareOrderId);
-          }
-        } else {
-          completedPayment = await searchCompletedSquarePayment(squareOrderId);
-        }
       } catch (error) {
         if (squareEnvironment !== "sandbox") {
           throw error;
         }
       }
 
-      if ((!completedPayment || completedPayment.status !== "COMPLETED") && squareEnvironment !== "sandbox") {
+      if ((!squareOrder || squareOrder.state === "CANCELED") && squareEnvironment !== "sandbox") {
         sendHtml(
           res,
           200,
-          `<html><body style="font-family:Arial,sans-serif;padding:40px;"><h1>Payment still processing</h1><p>Your payment has not completed yet. Please wait a moment and refresh this page.</p></body></html>`
+          `<html><body style="font-family:Arial,sans-serif;padding:40px;"><h1>Payment verification issue</h1><p>Square returned the checkout, but the related order could not be confirmed. Please contact support with Submission ID: ${submissionId}</p></body></html>`
         );
         return;
       }
