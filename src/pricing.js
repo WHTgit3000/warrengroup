@@ -20,6 +20,20 @@ function toCurrency(value) {
   return Math.round(Number(value || 0) * 100) / 100;
 }
 
+function addDownloadParam(link) {
+  const value = String(link || "").trim();
+  if (!value) return "";
+
+  try {
+    const url = new URL(value);
+    url.searchParams.set("download", "1");
+    return url.toString();
+  } catch (error) {
+    const separator = value.includes("?") ? "&" : "?";
+    return value.includes("download=1") ? value : `${value}${separator}download=1`;
+  }
+}
+
 function buildCheckoutOrder(input) {
   const purchaseType = normalizePurchaseType(input.purchaseType);
   const annualMultiplier = getAnnualMultiplier();
@@ -50,7 +64,7 @@ function buildCheckoutOrder(input) {
       category: product.category,
       state: product.state,
       county: product.county,
-      link: product.link,
+      link: addDownloadParam(product.link),
       basePrice: toCurrency(product.basePrice),
       unitPrice,
     };
