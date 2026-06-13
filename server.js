@@ -304,6 +304,29 @@ async function searchCompletedSquarePayment(orderId) {
   return payments.find(payment => payment.status === "COMPLETED") || null;
 }
 
+async function retrieveSquarePayment(paymentId) {
+  const response = await requestJson({
+    hostname: squareApiHost,
+    path: `/v2/payments/${encodeURIComponent(paymentId)}`,
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${squareAccessToken}`,
+      "Square-Version": squareVersion,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new Error(
+      `Square payment lookup failed: ${
+        response.body && response.body.errors ? JSON.stringify(response.body.errors) : response.statusCode
+      }`
+    );
+  }
+
+  return response.body.payment || null;
+}
+
 async function submitOrderToZap(order) {
   const payload = buildLegacyZapPayload(order);
   const webhookUrl =
@@ -522,6 +545,7 @@ const server = http.createServer(async (req, res) => {
 
   if (requestUrl.pathname === "/payment/success") {
     const submissionId = requestUrl.searchParams.get("submissionId") || "";
+    const transactionId = requestUrl.searchParams.get("transactionId") || "";
     const pending = pendingOrders.get(submissionId);
 
     if (!pending) {
@@ -539,14 +563,16 @@ const server = http.createServer(async (req, res) => {
 
       try {
         squareOrder = await retrieveSquareOrder(pending.squareOrderId);
-        completedPayment = await searchCompletedSquarePayment(pending.squareOrderId);
+        completedPayment = transactionId
+          ? await retrieveSquarePayment(transactionId)
+          : await searchCompletedSquarePayment(pending.squareOrderId);
       } catch (error) {
         if (squareEnvironment !== "sandbox") {
           throw error;
         }
       }
 
-      if (!completedPayment && squareEnvironment !== "sandbox") {
+      if ((!completedPayment || completedPayment.status !== "COMPLETED") && squareEnvironment !== "sandbox") {
         sendHtml(
           res,
           200,
